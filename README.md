@@ -8,7 +8,7 @@
 
 | **Nama**                    | **NIM**   | **ID GITHUB**                                                               |
 | --------------------------- | --------- | --------------------------------------------------------------------------- |
-| Eric Arwido Damanika        | 122140157 | <a href="https://github.com/erc-a">@erc-a</a> |
+| Eric Arwido Damanik         | 122140157 | <a href="https://github.com/erc-a">@erc-a</a> |
 
 ---
 
