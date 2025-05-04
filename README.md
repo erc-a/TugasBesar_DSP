@@ -34,6 +34,9 @@ video web-cam secara real-time.
 
 ## Logbook
 ### Minggu 1
+Membuat Repository GitHub untuk proyek ini.
+
+
 ### Minggu 2
 ### Minggu 3
 ### Minggu 4
