@@ -1,10 +1,11 @@
+import numpy as np
+import mediapipe as mp
 import cv2
 import os
 import csv
 import time
 from datetime import datetime
-import numpy as np
-import mediapipe as mp
+
 
 def detect_faces(frame, face_detection):
     # Process the frame
@@ -39,9 +40,10 @@ def extract_mean_rgb_from_roi(image, x, y, width, height):
     return mean_r, mean_g, mean_b
 
 def main():
-    Duration = 45
+    Duration = 10
     FPS = 30
     OUTPUT_DIR = "rppg_data"
+    COUNTDOWN = 3
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
@@ -62,6 +64,23 @@ def main():
 
     mp_face_detection = mp.solutions.face_detection
     face_detection = mp_face_detection.FaceDetection(min_detection_confidence=0.5)
+
+    # Add countdown before starting recording
+    print("Get ready! Recording will start in 3 seconds...")
+    while COUNTDOWN > 0:
+        ret, frame = cap.read()
+        if not ret:
+            print("Error: Could not read frame.")
+            return
+
+        # Display countdown on frame
+        cv2.putText(frame, f"Starting in {COUNTDOWN}...", 
+                    (30, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv2.imshow("rPPG Recorder", frame)
+        
+        if cv2.waitKey(1000) & 0xFF == ord('q'):  # Wait 1 second between counts
+            break
+        COUNTDOWN -= 1
 
     with open(csv_file, mode='w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
