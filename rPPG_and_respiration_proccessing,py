@@ -1,0 +1,133 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+from scipy.signal import butter, filtfilt, find_peaks
+
+# --- PENGATURAN ---
+OUTPUT_FOLDER = 'penggabungan_output'
+FILE_CSV_INPUT = os.path.join(OUTPUT_FOLDER, 'data_vitals.csv')
+FILE_GRAFIK_OUTPUT = os.path.join(OUTPUT_FOLDER, 'grafik_rppg_dan_respirasi.png')
+# --------------------
+
+# ===================================================================
+# FUNGSI-FUNGSI UNTUK ANALISIS SINYAL
+# ===================================================================
+
+# Fungsi untuk Filter Sinyal Respirasi
+def filter_sinyal_respirasi(data, cutoff_freq=0.8, sample_rate=30, order=2):
+    nyquist = 0.5 * sample_rate
+    normal_cutoff = cutoff_freq / nyquist
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    filtered_data = filtfilt(b, a, data)
+    return filtered_data
+
+# Fungsi untuk Menghitung Laju Napas
+def hitung_laju_napas(sinyal, timestamps):
+    fft_result = np.fft.fft(sinyal - np.mean(sinyal))
+    freqs = np.fft.fftfreq(len(sinyal), d=np.mean(np.diff(timestamps)))
+    idx = np.where((freqs >= 0.1) & (freqs <= 0.8)) # Rentang napas normal 0.1-0.8 Hz
+    if len(idx[0]) == 0: return 0
+    dominant_freq = freqs[idx[0][np.argmax(np.abs(fft_result[idx]))]]
+    return dominant_freq * 60
+
+# Fungsi untuk Algoritma POS rPPG
+def cpu_POS(signal, fps):
+    w = int(1.6 * fps)
+    X = signal
+    e, c, f = X.shape
+    P = np.array([[0, 1, -1], [-2, 1, 1]])
+    Q = np.stack([P for _ in range(e)], axis=0)
+    H = np.zeros((e, f))
+    for n in np.arange(w, f):
+        m = n - w + 1
+        Cn = X[:, :, m:(n + 1)]
+        M = 1.0 / (np.mean(Cn, axis=2) + 1e-9)
+        M = np.expand_dims(M, axis=2)
+        Cn = np.multiply(M, Cn)
+        S = np.dot(Q, Cn)
+        S = S[0, :, :, :]
+        S = np.swapaxes(S, 0, 1)
+        S1, S2 = S[:, 0, :], S[:, 1, :]
+        alpha = np.std(S1, axis=1) / (1e-9 + np.std(S2, axis=1))
+        alpha = np.expand_dims(alpha, axis=1)
+        Hn = np.add(S1, alpha * S2)
+        Hnm = Hn - np.expand_dims(np.mean(Hn, axis=1), axis=1)
+        H[:, m:(n + 1)] += Hnm
+    return H
+
+# Fungsi untuk Bandpass Filter Sinyal rPPG
+def bandpass_filter_rppg(data, lowcut, highcut, fs, order=5):
+    nyquist = 0.5 * fs
+    low = lowcut / nyquist
+    high = highcut / nyquist
+    b, a = butter(order, [low, high], btype='band')
+    return filtfilt(b, a, data)
+
+# ===================================================================
+# PROSES UTAMA
+# ===================================================================
+
+try:
+    df = pd.read_csv(FILE_CSV_INPUT)
+except FileNotFoundError:
+    print(f"Error: File '{FILE_CSV_INPUT}' tidak ditemukan.")
+    print("Pastikan kamu sudah menjalankan 'tangkap_vitals.py' terlebih dahulu.")
+    exit()
+
+if df.empty:
+    print("File CSV kosong. Tidak ada data untuk diproses.")
+    exit()
+
+timestamps = df['timestamp'].values
+sample_rate = 1 / np.mean(np.diff(timestamps))
+print(f"Sample rate terdeteksi: {sample_rate:.2f} Hz")
+
+# --- PROSES SINYAL RESPIRASI ---
+print("\nMemproses sinyal respirasi...")
+posisi_y_bahu = df['avg_shoulder_y'].values
+valid_resp_indices = np.where(posisi_y_bahu > 0)[0]
+if len(valid_resp_indices) > 10:
+    resp_timestamps = timestamps[valid_resp_indices]
+    resp_signal_raw = posisi_y_bahu[valid_resp_indices]
+    sinyal_napas_terfilter = filter_sinyal_respirasi(resp_signal_raw, sample_rate=sample_rate)
+    peaks_resp, _ = find_peaks(sinyal_napas_terfilter, distance=sample_rate * 2, height=np.std(sinyal_napas_terfilter))
+    laju_napas = hitung_laju_napas(sinyal_napas_terfilter, resp_timestamps)
+
+# --- PROSES SINYAL RPPG ---
+print("\nMemproses sinyal rPPG...")
+valid_rppg_indices = np.where(df['mean_r'] > 0)[0]
+if len(valid_rppg_indices) > int(2 * sample_rate):
+    rppg_timestamps = timestamps[valid_rppg_indices]
+    rgb_signal = df[['mean_r', 'mean_g', 'mean_b']].iloc[valid_rppg_indices].values.T
+    rgb_signal_reshaped = rgb_signal.reshape(1, 3, -1)
+    pos_signal = cpu_POS(rgb_signal_reshaped, fps=sample_rate).flatten()
+    filtered_pos = bandpass_filter_rppg(pos_signal, lowcut=0.7, highcut=2.5, fs=sample_rate)
+    peaks_rppg, _ = find_peaks(filtered_pos, distance=sample_rate / 2.5)
+    laju_jantung = len(peaks_rppg) * (60 / (len(filtered_pos) / sample_rate))
+
+# --- GABUNGKAN PLOT ---
+plt.style.use('seaborn-v0_8-whitegrid')
+fig, axs = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
+
+# Plot rPPG
+axs[0].plot(rppg_timestamps, filtered_pos, 'g-', label='Sinyal rPPG (POS Terfilter)')
+axs[0].plot(rppg_timestamps[peaks_rppg], filtered_pos[peaks_rppg], 'ro', markersize=6, label=f'Puncak Detak ({len(peaks_rppg)})')
+axs[0].set_title(f'Analisis Sinyal rPPG\nEstimasi Detak Jantung: {laju_jantung:.2f} BPM', fontsize=16)
+axs[0].set_ylabel('Amplitudo')
+axs[0].legend()
+
+# Plot Respirasi
+axs[1].plot(resp_timestamps, resp_signal_raw, 'o-', color='lightblue', markersize=3, label='Sinyal Asli (Bahu)')
+axs[1].plot(resp_timestamps, sinyal_napas_terfilter, '-', color='royalblue', linewidth=2, label='Sinyal Pernapasan')
+axs[1].plot(resp_timestamps[peaks_resp], sinyal_napas_terfilter[peaks_resp], 'ro', markersize=6, label=f'Puncak Napas ({len(peaks_resp)})')
+axs[1].set_title(f'Analisis Sinyal Pernapasan\nEstimasi Laju: {laju_napas:.2f} napas/menit', fontsize=16)
+axs[1].set_xlabel('Waktu (detik)')
+axs[1].set_ylabel('Amplitudo (Perubahan Posisi Bahu)')
+axs[1].legend()
+
+# Simpan dan tampilkan grafik
+plt.tight_layout()
+plt.savefig(FILE_GRAFIK_OUTPUT)
+print(f"Grafik gabungan disimpan di '{FILE_GRAFIK_OUTPUT}'")
+plt.show()
