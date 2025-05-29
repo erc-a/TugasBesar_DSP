@@ -1,0 +1,213 @@
+\documentclass[10pt,aspectratio=169]{beamer}
+\usepackage{poly}
+\usepackage[useregional]{datetime2}
+\usepackage{graphicx}  % for images
+\usepackage{xcolor}    % for color
+\usepackage{minted}    % for better code highlighting
+\usepackage[T1]{fontenc}  % for better font encoding
+\usepackage{inconsolata}  % fallback monospace font
+
+% Minted configuration
+\setminted{
+    frame=none,
+    fontsize=\small,
+    linenos=true,
+    numbersep=12pt,
+    bgcolor=white,
+    style=friendly,
+    autogobble,
+    breaklines,
+    baselinestretch=1.2
+}
+
+% Add slide numbers to the footer
+\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{navigation symbols}{}  % Remove navigation symbols
+
+% Define a centered minted environment
+\newenvironment{centeredcode}{\begin{center}}{\end{center}}
+
+\title{Sistem Operasi (Judul mata Kuliah)}
+\subtitle{Judul Pertemuan}
+\author{Martin Clinton Manullang}
+\institute{Program Studi Teknik Informatika}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Sample Section}
+% --- Frame: Formatting Examples ---
+\begin{frame}{Formatting Examples}
+    \framesubtitle{Subtitle Example}
+    % Sample text with various formatting
+    This is an example of \textbf{bold text}, \textit{italic text}, and \texttt{monospaced text}.
+    
+    \bigskip
+    % Normal block
+    \begin{block}{Block Title}
+      This is a normal block with some dummy text.
+    \end{block}
+    
+    % Alert block
+    \begin{alertblock}{Alert Block}
+      This is an \textbf{alert} block showing important information.
+    \end{alertblock}
+\end{frame}
+
+% --- Frame: Two Column Example ---
+\begin{frame}{Two Column Layout Example}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Left Column: Lists and Text}
+            \begin{itemize}
+                \item First item with \textit{italics}.
+                \item Second item with \textbf{bold}.
+                \item Third item with \texttt{typewriter font}.
+            \end{itemize}
+        \column{0.48\textwidth}
+            \textbf{Right Column: Table and Graphic}
+            \vspace{0.5em}
+            % Sample table
+            \begin{table}
+                \centering
+                \begin{tabular}{|c|c|c|}
+                    \hline
+                    \textbf{ID} & \textbf{Name} & \textbf{Value} \\ \hline
+                    1 & Alpha & 10 \\ \hline
+                    2 & Beta & 20 \\ \hline
+                    3 & Gamma & 30 \\ \hline
+                \end{tabular}
+            \end{table}
+            \vspace{0.5em}
+            % Sample graphic placeholder
+            \begin{center}
+                \includegraphics[width=0.5\textwidth]{example-image} % Dummy image placeholder
+            \end{center}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Elaborated Table ---
+\begin{frame}{Elaborated Table Example}
+    \begin{table}
+        \centering
+        \caption{Dummy Data Table}
+        \begin{tabular}{|l|c|r|}
+            \hline
+            \textbf{Category} & \textbf{Count} & \textbf{Percentage} \\ \hline
+            Category A & 15 & 37.50\% \\ \hline
+            Category B & 20 & 50.00\% \\ \hline
+            Category C & 5  & 12.50\% \\ \hline
+        \end{tabular}
+    \end{table}
+\end{frame}
+
+\section{Section Two}
+
+% --- Frame: Python Code Example ---
+\begin{frame}[fragile]{Python Code Examples}
+    \framesubtitle{Sample Implementation}
+    \begin{centeredcode}
+        \begin{minted}[fontsize=\footnotesize,xleftmargin=5em]{python}
+            # This is a sample Python function
+        def calculate_factorial(n):
+            """Calculate the factorial of a number"""
+            if n == 0 or n == 1:
+                return 1
+            else:
+                return n * calculate_factorial(n - 1)
+
+        # Example usage
+        number = 5
+        result = calculate_factorial(number)
+        print(f"Factorial of {number} is {result}")
+    \end{minted}
+    \end{centeredcode}
+\end{frame}
+
+% --- Frame: Inline Code Examples ---
+\begin{frame}[fragile]{Inline Code Examples}
+    \framesubtitle{Code Listing Example}
+    \begin{itemize}
+        \item Here's a sorting algorithm implementation:
+        \begin{minted}[fontsize=\footnotesize, linenos=false]{python}
+def quick_sort(arr):
+    if len(arr) <= 1: return arr
+    pivot = arr[0]
+    left = [x for x in arr[1:] if x < pivot]
+    right = [x for x in arr[1:] if x >= pivot]
+    return quick_sort(left) + [pivot] + quick_sort(right)
+        \end{minted}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Inline Code in Paragraphs}
+    \framesubtitle{Text with Code Examples}
+    
+    When working with Python, you can create a list using square brackets like 
+    \mintinline{python}{my_list = [1, 2, 3]} or define a dictionary with 
+    \mintinline{python}{my_dict = {"key": "value"}}.
+    
+    \medskip
+    
+    Function definitions are straightforward: \mintinline{python}{def greet(name): return f"Hello {name}"}
+    can be used to create simple greeting functions.
+    
+    \medskip
+    
+    For loops are common in Python: \mintinline{python}{for i in range(5): print(i)} will print
+    numbers from 0 to 4.
+\end{frame}
+
+\begin{frame}{Description List Example}
+    \framesubtitle{Terms and Definitions}
+    \begin{description}
+        \item[CPU] Central Processing Unit - The primary processor that executes instructions
+        \item[RAM] Random Access Memory - Temporary storage for running programs
+        \item[GPU] Graphics Processing Unit - Specialized processor for rendering graphics
+        \item[SSD] Solid State Drive - Fast storage device with no moving parts
+    \end{description}
+\end{frame}
+
+\section{Another Section}
+
+\begin{frame}{Long Descriptive Text Example}
+    \framesubtitle{Understanding Complex Concepts}
+    \begin{block}{Introduction}
+        Complex systems can be understood through careful analysis and decomposition 
+        into smaller, manageable components.
+    \end{block}
+    
+    \begin{itemize}
+        \item<1-> \textbf{Primary Concept:} The fundamental principle builds upon 
+        the interaction between multiple interconnected elements.
+        
+        \item<2-> \textbf{Detailed Analysis:} Each component serves a specific 
+        purpose within the larger framework, contributing to the overall 
+        functionality of the system.
+        
+        \item<3-> \textbf{Implementation:} The practical application involves 
+        careful consideration of various factors including performance, 
+        scalability, and maintainability.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Continued Discussion}
+    \framesubtitle{Advanced Topics}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \begin{alertblock}{Key Considerations}
+                When implementing complex systems, it's crucial to maintain 
+                a balance between theoretical principles and practical constraints.
+            \end{alertblock}
+            
+        \column{0.48\textwidth}
+            \begin{block}{Future Directions}
+                Ongoing research continues to explore new methodologies and 
+                approaches for optimizing system performance and reliability.
+            \end{block}
+    \end{columns}
+\end{frame}
+
+\backmatter % generate the final slide
+\end{document}
