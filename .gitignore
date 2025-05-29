@@ -1,0 +1,70 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Pnvironments (venv, conda)
+venv/
+env/
+.venv/
+ENV/
+
+# IDE / Editor Specific Files
+.vscode/
+.idea/
+*.project
+*.pydevproject
+*.sublime-project
+*.sublime-workspace
+nbproject/ # NetBeans
+
+# Operating System Specific Files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Log Files
+*.log
+logs/
+
+# Build & Distribution Artifacts
+build/
+dist/
+eggs/
+*.egg-info/
+*.egg
+wheels/
+*.whl # Python wheels
+
+# IPython / Jupyter Notebook Checkpoints
+.ipynb_checkpoints
+
+# MyPy, Pyright, Pytype Cache & Config
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+typings/
+
+# Python Stubs
+*.pyi
+
+# Test Output & Coverage Reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Berkas unduhan atau data besar yang tidak seharusnya di repositori
+downloads/
+data/
+*.bak
+*.tmp

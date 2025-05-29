@@ -1,3 +1,4 @@
+import os
 import cv2
 import mediapipe as mp
 import time
@@ -7,9 +8,14 @@ import numpy as np
 # --- PENGATURAN ---
 DURASI_REKAMAN = 10  # Detik
 FPS_TARGET = 30      # Frames per second yang diinginkan
-FILE_VIDEO_OUTPUT = 'rekaman_respirasi.mp4'
-FILE_CSV_OUTPUT = 'data_respirasi.csv'
+OUTPUT_FOLDER = 'resp_output'  # Folder output
+FILE_VIDEO_OUTPUT = os.path.join(OUTPUT_FOLDER, 'rekaman_respirasi.mp4')
+FILE_CSV_OUTPUT = os.path.join(OUTPUT_FOLDER, 'data_respirasi.csv')
 # --------------------
+
+# Pastikan folder output ada
+if not os.path.exists(OUTPUT_FOLDER):
+    os.makedirs(OUTPUT_FOLDER)
 
 # Inisialisasi MediaPipe Pose
 mp_pose = mp.solutions.pose

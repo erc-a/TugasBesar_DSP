@@ -5,12 +5,10 @@ import mediapipe as mp
 import numpy as np
 import os
 from datetime import datetime
-import csv 
-import pandas as pd # +++ TAMBAHAN: Untuk membaca CSV di fungsi Matplotlib
-import matplotlib.pyplot as plt # +++ TAMBAHAN: Untuk plotting Matplotlib
+import csv # +++ TAMBAHAN: Untuk menyimpan data ke CSV
 
 # Mengimpor modul logika yang sudah kita buat
-import main_gui_processing as vp # Pastikan nama file ini sesuai
+import signal_proccesing as vp # Pastikan nama file ini sesuai
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QObject
@@ -19,25 +17,27 @@ import pyqtgraph as pg
 import pyqtgraph.exporters
 
 # --- PENGATURAN APLIKASI ---
-JUMLAH_DATA_PLOT = 300 
-UPDATE_HASIL_SETIAP = 1.0 
-FOLDER_HASIL = "hasil_proses" 
+JUMLAH_DATA_PLOT = 300 # Jumlah data point yang ditampilkan di grafik
+UPDATE_HASIL_SETIAP = 1.0 # Detik, seberapa sering hasil BPM dan RR di-update
+FOLDER_HASIL = "hasil_proses" # Nama folder output untuk plot dan CSV
 
 class WorkerSignals(QObject):
     frame_update = pyqtSignal(np.ndarray)
-    data_update = pyqtSignal(float, float, float) 
-    results_update = pyqtSignal(str, str) 
-    finished = pyqtSignal(list, list, list, list) 
+    data_update = pyqtSignal(float, float, float) # timestamp, resp_plot_val, rppg_plot_val
+    results_update = pyqtSignal(str, str) # respiration_rate, heart_rate
+    finished = pyqtSignal(list, list, list, list) # +++ PERUBAHAN: Mengirim semua data mentah saat selesai
 
 class VitalsWorker(QThread):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.signals = WorkerSignals()
         self.is_running = True
+        # +++ TAMBAHAN: List untuk menyimpan semua data mentah yang akan di-emit
         self.all_timestamps = []
         self.all_respiration_data = []
         self.all_rppg_rgb_data = []
         self.all_live_rppg_plot_data = []
+
 
     def run(self):
         cap = cv2.VideoCapture(0)
@@ -52,10 +52,15 @@ class VitalsWorker(QThread):
         start_time = time.time()
         last_update_time = start_time
         
+        # Menggunakan list instance yang sudah didefinisikan di __init__
+        # agar bisa diakses saat emit 'finished'
+        # timestamps, respiration_data, rppg_rgb_data, live_rppg_plot_data = [], [], [], []
+        # --- PERUBAHAN: Menggunakan list dari instance ---
         self.all_timestamps.clear()
         self.all_respiration_data.clear()
         self.all_rppg_rgb_data.clear()
         self.all_live_rppg_plot_data.clear()
+
 
         while self.is_running:
             ret, frame = cap.read()
@@ -136,11 +141,12 @@ class VitalsWorker(QThread):
                 filtered_pos[-1] if len(filtered_pos) > 0 else 0.0
             )
 
+        # --- PERUBAHAN: Mengirim semua data mentah saat selesai ---
         self.signals.finished.emit(
             self.all_timestamps,
             self.all_respiration_data,
             self.all_rppg_rgb_data,
-            self.all_live_rppg_plot_data
+            self.all_live_rppg_plot_data # Meskipun ini untuk plot live, bisa juga disimpan
         )
         cap.release()
         mp_pose.close()
@@ -211,7 +217,7 @@ class MainWindow(QMainWindow):
         self.start_button.clicked.connect(self.start_capture)
         self.stop_button.clicked.connect(self.stop_capture)
         
-        self.timestamps_plot, self.resp_data_plot, self.rppg_data_plot = [], [], []
+        self.timestamps_plot, self.resp_data_plot, self.rppg_data_plot = [], [], [] # Data untuk plot live
 
     def start_capture(self):
         if self.is_running:
@@ -230,7 +236,8 @@ class MainWindow(QMainWindow):
         self.worker.signals.frame_update.connect(self.update_frame)
         self.worker.signals.data_update.connect(self.update_plots)
         self.worker.signals.results_update.connect(self.update_results)
-        self.worker.signals.finished.connect(self.capture_finished_and_save_all) # Diubah
+        # --- PERUBAHAN: Menghubungkan sinyal finished ke fungsi baru ---
+        self.worker.signals.finished.connect(self.capture_finished_and_save_data)
         self.worker.start()
         print("Worker thread dimulai.")
 
@@ -238,6 +245,7 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'worker') and self.is_running:
             print("Perintah stop dikirim ke MainWindow.")
             self.worker.stop()
+            # self.stop_button.setEnabled(False) # Dinonaktifkan sementara, akan dihandle oleh capture_finished
 
     def update_frame(self, frame):
         h, w, ch = frame.shape
@@ -263,19 +271,17 @@ class MainWindow(QMainWindow):
         self.rr_label.setText(f"Laju Napas: {rr}")
         self.bpm_label.setText(f"Detak Jantung: {bpm}")
 
-    # --- PERUBAHAN: Nama fungsi dan pemanggilan fungsi matplotlib ---
-    def capture_finished_and_save_all(self, all_timestamps, all_respiration_data, all_rppg_rgb_data, all_live_rppg_plot_data):
+    # --- PERUBAHAN: Fungsi capture_finished dipecah ---
+    def capture_finished_and_save_data(self, all_timestamps, all_respiration_data, all_rppg_rgb_data, all_live_rppg_plot_data):
         print("Sinyal 'finished' diterima oleh MainWindow.")
         self.is_running = False
         self.stop_button.setEnabled(False)
         self.start_button.setEnabled(True)
         
-        csv_filepath = None # Inisialisasi
         if len(all_timestamps) > 10:
-            self.save_pyqtgraph_plots() # Simpan plot dari pyqtgraph
-            csv_filepath = self.save_data_to_csv(all_timestamps, all_respiration_data, all_rppg_rgb_data)
-            if csv_filepath: # Jika CSV berhasil disimpan
-                self.generate_and_save_matplotlib_plots(csv_filepath) # +++ TAMBAHAN BARU
+            self.save_plots() # Tetap simpan gambar plot
+            # +++ TAMBAHAN: Panggil fungsi untuk menyimpan CSV +++
+            self.save_data_to_csv(all_timestamps, all_respiration_data, all_rppg_rgb_data)
         else:
             print("Tidak cukup data untuk menyimpan plot atau CSV.")
             
@@ -288,7 +294,7 @@ class MainWindow(QMainWindow):
             self.worker.wait()
         super().closeEvent(event)
 
-    def save_pyqtgraph_plots(self): # Diubah namanya agar lebih jelas
+    def save_plots(self):
         if not os.path.exists(FOLDER_HASIL):
             try:
                 os.makedirs(FOLDER_HASIL)
@@ -301,27 +307,29 @@ class MainWindow(QMainWindow):
         
         try:
             exporter_resp = pg.exporters.ImageExporter(self.resp_plot_widget.getPlotItem())
-            file_resp = os.path.join(FOLDER_HASIL, f"plot_pyqt_respirasi_{timestamp_str}.png")
+            file_resp = os.path.join(FOLDER_HASIL, f"plot_respirasi_{timestamp_str}.png")
             exporter_resp.export(file_resp)
-            print(f"Plot PyQtGraph respirasi disimpan ke: {file_resp}")
+            print(f"Plot respirasi disimpan ke: {file_resp}")
         except Exception as e:
-            print(f"Gagal menyimpan plot PyQtGraph respirasi: {e}")
+            print(f"Gagal menyimpan plot respirasi: {e}")
 
         try:
             exporter_rppg = pg.exporters.ImageExporter(self.rppg_plot_widget.getPlotItem())
-            file_rppg = os.path.join(FOLDER_HASIL, f"plot_pyqt_rppg_{timestamp_str}.png")
+            file_rppg = os.path.join(FOLDER_HASIL, f"plot_rppg_{timestamp_str}.png")
             exporter_rppg.export(file_rppg)
-            print(f"Plot PyQtGraph rPPG disimpan ke: {file_rppg}")
+            print(f"Plot rPPG disimpan ke: {file_rppg}")
         except Exception as e:
-            print(f"Gagal menyimpan plot PyQtGraph rPPG: {e}")
+            print(f"Gagal menyimpan plot rPPG: {e}")
 
+    # +++ TAMBAHAN: FUNGSI BARU UNTUK MENYIMPAN DATA KE CSV +++
     def save_data_to_csv(self, timestamps, respiration_data, rppg_rgb_data):
+        """Menyimpan data mentah yang terkumpul ke file CSV."""
         if not os.path.exists(FOLDER_HASIL):
             try:
-                os.makedirs(FOLDER_HASIL)
+                os.makedirs(FOLDER_HASIL) # Buat folder jika belum ada
             except OSError as e:
                 print(f"Gagal membuat folder '{FOLDER_HASIL}' untuk CSV: {e}")
-                return None # Kembalikan None jika gagal
+                return
 
         timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
         csv_filename = os.path.join(FOLDER_HASIL, f"data_vitals_{timestamp_str}.csv")
@@ -329,7 +337,10 @@ class MainWindow(QMainWindow):
         try:
             with open(csv_filename, 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile)
+                # Header CSV
                 writer.writerow(['timestamp', 'raw_respiration_y', 'raw_r_value', 'raw_g_value', 'raw_b_value'])
+                
+                # Tulis data baris per baris
                 for i in range(len(timestamps)):
                     ts = timestamps[i]
                     resp_y = respiration_data[i]
@@ -338,87 +349,9 @@ class MainWindow(QMainWindow):
                     rgb_b = rppg_rgb_data[i][2] if len(rppg_rgb_data[i]) == 3 else 0.0
                     writer.writerow([ts, resp_y, rgb_r, rgb_g, rgb_b])
             print(f"Data mentah disimpan ke CSV: {csv_filename}")
-            return csv_filename # Kembalikan path file jika berhasil
         except Exception as e:
             print(f"Gagal menyimpan data ke CSV: {e}")
-            return None
 
-    # +++ TAMBAHAN: FUNGSI UNTUK MEMBUAT DAN MENYIMPAN PLOT MATPLOTLIB +++
-    def generate_and_save_matplotlib_plots(self, csv_filepath):
-        """
-        Membaca data dari CSV, memproses, dan menyimpan plot Matplotlib tanpa deteksi puncak.
-        """
-        print(f"Membuat plot Matplotlib dari: {csv_filepath}")
-        try:
-            df = pd.read_csv(csv_filepath)
-        except Exception as e:
-            print(f"Gagal membaca CSV untuk Matplotlib: {e}")
-            return
-
-        if df.empty or len(df) <= 1:
-            print("CSV kosong atau tidak cukup data, tidak bisa membuat plot Matplotlib.")
-            return
-
-        timestamps = df['timestamp'].values
-        raw_respiration_y = df['raw_respiration_y'].values
-        raw_r = df['raw_r_value'].values
-        raw_g = df['raw_g_value'].values
-        raw_b = df['raw_b_value'].values
-
-        if len(timestamps) <= 1:
-            print("Tidak cukup timestamp untuk menghitung sample rate.")
-            return
-        sample_rate = 1.0 / np.mean(np.diff(timestamps))
-        if sample_rate <= 0:
-            print(f"Sample rate tidak valid: {sample_rate}. Menggunakan default 30Hz.")
-            sample_rate = 30.0
-
-        # Proses Sinyal Respirasi
-        filtered_respiration = vp.filter_sinyal_respirasi(raw_respiration_y, sample_rate)
-        
-        # Proses Sinyal rPPG
-        raw_rgb_signal = np.array([raw_r, raw_g, raw_b])
-        pulse_signal_pos = vp.cpu_POS(raw_rgb_signal, sample_rate)
-        filtered_rppg = vp.bandpass_filter_rppg(pulse_signal_pos, sample_rate)
-
-        # Hitung BPM dari sinyal rPPG
-        bpm_result = vp.hitung_detak_jantung(filtered_rppg, sample_rate)
-        print(f"Detak Jantung (BPM): {bpm_result}")
-
-        # Hilangkan DC Offset untuk plotting
-        raw_resp_plot = raw_respiration_y - np.mean(raw_respiration_y)
-        filtered_resp_plot = filtered_respiration - np.mean(filtered_respiration)
-
-        # Membuat Plot dengan Matplotlib
-        fig, axs = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
-        base_filename = os.path.splitext(os.path.basename(csv_filepath))[0]
-        fig.suptitle(f"Analisis Sinyal Vital (Matplotlib) - {base_filename}", fontsize=16)
-
-        # Plot data Respirasi
-        axs[0].plot(timestamps, raw_resp_plot, label='Sinyal Respirasi Mentah (Zero-Centered)', color='lightblue', alpha=0.7)
-        axs[0].plot(timestamps, filtered_resp_plot, label='Sinyal Respirasi Terfilter', color='c')
-        axs[0].set_ylabel('Amplitudo Gerakan Bahu (px)')
-        axs[0].set_title('Analisis Sinyal Pernapasan')
-        axs[0].legend()
-        axs[0].grid(True, linestyle=':', alpha=0.7)
-
-        # Plot rPPG
-        axs[1].plot(timestamps, filtered_rppg, label='Sinyal rPPG Terfilter', color='g')
-        axs[1].set_ylabel('Amplitudo Sinyal rPPG')
-        axs[1].set_title(f'Analisis Sinyal rPPG (Detak Jantung) - BPM: {bpm_result}')
-        axs[1].legend()
-        axs[1].grid(True, linestyle=':', alpha=0.7)
-        axs[1].set_xlabel('Waktu (detik)')
-
-        plt.tight_layout(rect=[0, 0, 1, 0.96])
-
-        mpl_plot_filename = os.path.join(FOLDER_HASIL, f"plot_matplotlib_{base_filename}.png")
-        try:
-            plt.savefig(mpl_plot_filename)
-            print(f"Plot Matplotlib disimpan ke: {mpl_plot_filename}")
-        except Exception as e:
-            print(f"Gagal menyimpan plot Matplotlib: {e}")
-        plt.close(fig)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -74,7 +74,7 @@ def bandpass_filter(signal_in, lowcut, highcut, fs, order=5):
 
 def main():
     # Load the mean rgb value for POS rppg algorithm
-    rgb_path = os.path.join('rppg_data', 'rppg_data_20250509_000650.csv')
+    rgb_path = os.path.join('rppg_data', 'rppg_data_20250523_154558.csv')
     rgb_df = pd.read_csv(rgb_path)
     rgb_signal = rgb_df[['R', 'G', 'B']].values.T
     fps = 30
