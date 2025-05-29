@@ -1,0 +1,17 @@
+name: realtime_rppg_rr
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - numpy
+  - pandas
+  - opencv
+  - scipy
+  - matplotlib
+  - scikit-learn
+  - pip
+  - pip:
+    - mediapipe
+    - torch
+    - torchvision
