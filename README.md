@@ -20,11 +20,33 @@ video web-cam secara real-time.
 
 ---
 
-## Teknologi yang Digunakan
+## **Teknologi yang Digunakan**
+
+* **Bahasa Pemrograman:** Python 3.9
+* **Utama:**
+    * **OpenCV:** Untuk akuisisi dan pemrosesan gambar dari webcam.
+    * **MediaPipe:** Untuk deteksi pose (estimasi gerakan bahu untuk sinyal pernapasan) dan deteksi wajah (ROI untuk sinyal rPPG).
+    * **NumPy:** Untuk operasi numerik, terutama dalam pemrosesan sinyal.
+    * **SciPy:** Untuk fungsi pemrosesan sinyal seperti filter (Butterworth) dan pencarian puncak.
+    * **PyQt6:** Untuk membangun antarmuka pengguna grafis (GUI) aplikasi.
+    * **PyQtGraph:** Untuk menampilkan plot sinyal secara *real-time* di GUI.
+    * **Pandas:** Untuk manipulasi data, terutama saat membaca dan menulis file CSV.
+    * **Matplotlib:** Untuk menghasilkan plot ringkasan analisis sinyal yang disimpan sebagai gambar.
 
 ----
 
-## Library yang Digunakan
+## **Library yang Digunakan**
+
+Berikut adalah daftar library utama yang tercantum dalam `requirements.txt` dan `environment.yml`:
+
+* `opencv-python`
+* `mediapipe`
+* `numpy`
+* `pandas`
+* `matplotlib`
+* `pyqt6`
+* `pyqtgraph`
+* `scipy`
 
 ---
 
@@ -55,18 +77,58 @@ video web-cam secara real-time.
 * **Pemrosesan Sinyal Modular:** Fungsi-fungsi pemrosesan sinyal (filter, POS, FFT, deteksi puncak) diorganisir dalam file `signal_proccesing.py`.
 
 ---
+## **Cara Menjalankan Proyek**
 
-## Logbook
+1.  **Persiapan Environment:**
+    * Pastikan Python 3.10 terinstal.
+    * Buat environment virtual (disarankan).
+    * Instal semua dependensi yang dibutuhkan. Anda bisa menggunakan salah satu dari cara berikut:
+        * Menggunakan Conda: `conda env create -f environment.yml` lalu `conda activate realtime_rppg_rr`
+        * Menggunakan Pip: `pip install -r requirements.txt`
+
+2.  **Menjalankan Aplikasi:**
+    * Buka terminal atau command prompt.
+    * Arahkan ke direktori utama proyek.
+    * Jalankan skrip utama: `python main_app.py`
+
+3.  **Menggunakan Aplikasi:**
+    * Setelah aplikasi terbuka, tekan tombol "Mulai Pengambilan Data".
+    * Posisikan wajah dan bahu Anda di depan webcam.
+    * Aplikasi akan mulai menampilkan sinyal dan menghitung RR serta BPM.
+    * Tekan "Hentikan Pengambilan Data" untuk berhenti. Data CSV dan plot ringkasan akan disimpan di folder `ouput/`.
+
+---
+## **Logbook**
+
 ### Minggu 1
 Membuat Repository GitHub untuk proyek ini.
 
-
 ### Minggu 2
+Implementasi fungsionalitas face tracking dan ekstraksi nilai RGB.
+Implementasi pemrosesan sinyal rPPG menggunakan algoritma POS dan *bandpass filtering*.
+
 ### Minggu 3
+Pengembangan fungsi untuk sinyal respirasi.
+Penggabungan fungsionalitas rPPG dan respirasi dalam satu skrip utama.
+
 ### Minggu 4
+Pengembangan Antarmuka Pengguna Grafis (GUI).
+Penambahan fungsi-fungsi pemrosesan sinyal untuk analisis respirasi dan detak jantung ke dalam modul terpisah.
+Memperbaiki struktur repository.
+Pembaruan `README.md` untuk meningkatkan deskripsi fitur, metode pemrosesan sinyal, dan menambahkan `environment.yml` dan 'requirements.txt'.
+Pembuataan laporan akhir.
 
 ---
 
 ## Referensi
+* Wang, W., den Brinker, A. C., Stuijk, S., & de Haan, G. (2016). Algorithmic principles of remote PPG. *IEEE Transactions on Biomedical Engineering, 64*(7), 1479-1491. (Digunakan dalam implementasi metode POS)
+* Dokumentasi MediaPipe: [https://mediapipe.dev/](https://mediapipe.dev/)
+* Dokumentasi OpenCV: [https://opencv.org/](https://opencv.org/)
+* Dokumentasi NumPy: [https://numpy.org/doc/](https://numpy.org/doc/)
+* Dokumentasi SciPy: [https://docs.scipy.org/doc/scipy/](https://docs.scipy.org/doc/scipy/)
+* Dokumentasi PyQt6: [https://www.riverbankcomputing.com/static/Docs/PyQt6/]
+* Dokumentasi PyQtGraph: [https://www.pyqtgraph.org/](https://www.pyqtgraph.org/)
+* Dokumentasi Pandas: [https://pandas.pydata.org/pandas-docs/stable/](https://pandas.pydata.org/pandas-docs/stable/)
+* Dokumentasi Matplotlib: [https://matplotlib.org/stable/contents.html](https://matplotlib.org/stable/contents.html)
 
 ---

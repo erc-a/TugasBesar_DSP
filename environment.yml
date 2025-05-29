@@ -9,7 +9,6 @@ dependencies:
   - opencv
   - scipy
   - matplotlib
-  - scikit-learn
   - pip
   - pip:
     - mediapipe
