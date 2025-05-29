@@ -1,5 +1,9 @@
 # Tugas Besar Mata Kuliah Digital Processing Signal (IF3024)
 
+<p align="center">
+  <img src="docs/images/if3024_logo.png" alt="IF3024 Logo" width="200"/>
+</p>
+
 ## Dosen Pengampu: **Martin Clinton Tosima Manullang, S.T., M.T..**
 
 ---
