@@ -23,7 +23,7 @@ UPDATE_HASIL_SETIAP = 1.0
 FOLDER_HASIL = "ouput"
 DURASI_KALKULASI_RR_BPM = 10
 DURASI_KALKULASI_RESP = 15
-ROI_DAHI_OFFSET_Y_KE_ATAS = 10
+ROI_DAHI_OFFSET_Y_KE_ATAS = 30
 
 
 class WorkerSignals(QObject):
@@ -33,6 +33,7 @@ class WorkerSignals(QObject):
     finished = pyqtSignal(list, list, list, list)
 
 class RealTimeSignalWorker(QThread):
+    """Worker thread untuk memproses sinyal real-time dari kamera"""
     def __init__(self, parent=None):
         super().__init__(parent)
         self.signals = WorkerSignals()
@@ -43,6 +44,7 @@ class RealTimeSignalWorker(QThread):
         self.all_live_g_minus_b_plot_data = []
 
     def run(self):
+        """Main loop untuk capture dan proses video stream"""
         cap = cv2.VideoCapture(0)
         fps_aktual = cap.get(cv2.CAP_PROP_FPS)
         if not (fps_aktual and fps_aktual >= 1.0):
@@ -176,10 +178,12 @@ class RealTimeSignalWorker(QThread):
         print("Worker thread selesai dan resource MediaPipe dilepaskan.")
 
     def stop(self):
+        """Menghentikan worker thread dengan aman"""
         print("Perintah stop diterima oleh RealTimeSignalWorker.")
         self.is_running = False
 
 class MainWindow(QMainWindow):
+    """Main window aplikasi GUI untuk monitoring sinyal vital"""
     def __init__(self):
         super().__init__()
         self.is_running_capture = False 
@@ -273,6 +277,7 @@ class MainWindow(QMainWindow):
 
 
     def start_signal_capture(self):
+        """Memulai capture dan processing sinyal dari kamera"""
         if self.is_running_capture:
             return
         self.is_running_capture = True
@@ -301,6 +306,7 @@ class MainWindow(QMainWindow):
         print("Thread RealTimeSignalWorker dimulai.")
 
     def stop_signal_capture(self):
+        """Menghentikan capture dan processing sinyal"""
         self.duration_timer.stop() # Hentikan timer durasi
         if hasattr(self, 'signal_processing_worker') and self.is_running_capture:
             print("Perintah stop dikirim dari MainWindow ke RealTimeSignalWorker.")
@@ -308,6 +314,7 @@ class MainWindow(QMainWindow):
             # Status is_running_capture akan di-set False di on_capture_finished_save_results
             
     def update_video_frame_display(self, cv_frame):
+        """Update tampilan video feed di GUI"""
         rgb_image = cv2.cvtColor(cv_frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_image.shape
         bytes_per_line = ch * w
@@ -319,6 +326,7 @@ class MainWindow(QMainWindow):
         ))
 
     def update_live_plots(self, timestamp, resp_val, rppg_val):
+        """Update plot real-time untuk sinyal pernapasan dan detak jantung"""
         self.plot_timestamps_buffer.append(timestamp)
         self.plot_resp_data_buffer.append(resp_val)
         self.plot_rppg_data_buffer.append(rppg_val)
@@ -334,10 +342,12 @@ class MainWindow(QMainWindow):
 
 
     def update_rr_bpm_results(self, rr_str, bpm_str):
+        """Update hasil pengukuran laju napas dan detak jantung di GUI"""
         self.rr_label.setText(f"Laju Napas: {rr_str}")
         self.bpm_label.setText(f"Detak Jantung (via POS): {bpm_str}")
 
     def on_capture_finished_save_results(self, all_timestamps, all_respiration_data, all_rppg_rgb_data, all_live_g_minus_b_plot_data):
+        """Menyimpan hasil pengukuran ke file saat capture selesai"""
         print("Sinyal 'finished' diterima oleh MainWindow dari RealTimeSignalWorker.")
         self.is_running_capture = False # Penting untuk di-set di sini
         self.duration_timer.stop() # Pastikan timer durasi berhenti
@@ -372,6 +382,7 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def save_raw_data_to_csv(self, timestamps, raw_respiration_y_data, raw_rppg_mean_rgb_data):
+        """Menyimpan data mentah ke file CSV"""
         if not os.path.exists(FOLDER_HASIL):
             try:
                 os.makedirs(FOLDER_HASIL)
@@ -401,6 +412,7 @@ class MainWindow(QMainWindow):
             return None
 
     def generate_and_save_matplotlib_summary_plots(self, csv_filepath):
+        """Membuat dan menyimpan plot ringkasan menggunakan matplotlib"""
         print(f"Membuat plot Matplotlib ringkasan dari: {csv_filepath}")
         try:
             df = pd.read_csv(csv_filepath)

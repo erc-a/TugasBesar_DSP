@@ -33,7 +33,7 @@ video web-cam secara real-time.
     * **OpenCV:** Untuk akuisisi dan pemrosesan gambar dari webcam.
     * **MediaPipe:** Untuk deteksi pose (estimasi gerakan bahu untuk sinyal pernapasan) dan deteksi wajah (ROI untuk sinyal rPPG).
     * **NumPy:** Untuk operasi numerik, terutama dalam pemrosesan sinyal.
-    * **SciPy:** Untuk fungsi pemrosesan sinyal seperti filter (Butterworth) dan pencarian puncak.
+    * **SciPy:** Untuk fungsi pemrosesan sinyal seperti filter (Butterworth).
     * **PyQt6:** Untuk membangun antarmuka pengguna grafis (GUI) aplikasi.
     * **PyQtGraph:** Untuk menampilkan plot sinyal secara *real-time* di GUI.
     * **Pandas:** Untuk manipulasi data, terutama saat membaca dan menulis file CSV.
@@ -80,7 +80,7 @@ Berikut adalah daftar library utama yang tercantum dalam `requirements.txt` dan 
 * **Penyimpanan Data:**
     * Menyimpan data mentah sinyal (timestamp, posisi bahu, nilai mean R, G, B dari ROI) ke dalam file CSV di folder `ouput/`. (Contoh nama file: `data_realtime_signal_YYYYMMDD_HHMMSS.csv`)
     * Menyimpan plot ringkasan analisis sinyal pernapasan dan rPPG (menggunakan Matplotlib) sebagai file gambar di folder `ouput/`.
-* **Pemrosesan Sinyal Modular:** Fungsi-fungsi pemrosesan sinyal (filter, POS, FFT, deteksi puncak) diorganisir dalam file `signal_proccesing.py`.
+* **Pemrosesan Sinyal Modular:** Fungsi-fungsi pemrosesan sinyal (filter, POS, FFT) diorganisir dalam file `signal_proccesing.py`.
 
 ---
 ## **Cara Menjalankan Proyek**
